@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repuestos JN - Gestión de Inventario</title>
+    <style>
+        /* Tus estilos originales */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #007bff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        body::before {
+            content: "REPUESTOS JN";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8em;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.1);
+            z-index: 0;
+            white-space: nowrap;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        #loginContainer,
+        #inventoryContainer {
+            max-width: 700px;
+            width: 100%;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            text-align: left;
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        #loginContainer {
+            display: block;
+        }
+
+        #inventoryContainer {
+            display: none;
+        }
+
+        #loginContainer input[type="password"],
+        #addPartForm input[type="text"],
+        #addPartForm input[type="number"],
+        #buscarInput {
+            width: calc(100% - 24px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #loginContainer button,
+        #addPartForm button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            max-width: 200px;
+        }
+
+        #loginContainer button:hover,
+        #addPartForm button:hover {
+            background-color: #0056b3;
+        }
+
+        #addPartForm {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            justify-content: center;
+            text-align: left;
+        }
+
+        #inventoryScrollContainer {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            color: #333;
+        }
+
+        td button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+            margin: 2px;
+        }
+
+        td button.sell-button {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        td button.sell-button:hover:not(:disabled) {
+            background-color: #e0a800;
+        }
+
+        td button.delete-button {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        td button.delete-button:hover:not(:disabled) {
+            background-color: #c82333;
+        }
+
+        td button.modify-button {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+
+        td button.modify-button:hover {
+            background-color: #138496;
+        }
+
+        .logout-link {
+            display: block;
+            text-align: right;
+            margin-bottom: 10px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: color 0.3s ease;
+        }
+
+        .logout-link:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        #noPartsMessage {
+            text-align: center;
+            color: #777;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loginContainer">
+        <h2>Repuestos JN - Login</h2>
+        <input type="password" id="password" placeholder="Contraseña" />
+        <button onclick="login()">Ingresar</button>
+    </div>
+
+    <div id="inventoryContainer">
+        <a href="#" onclick="logout()" class="logout-link">Cerrar Sesión</a>
+        <h2>Gestión de Repuestos</h2>
+
+        <h3>Agregar Repuesto</h3>
+        <form id="addPartForm" onsubmit="addPart(event)">
+            <input type="text" id="nombreRepuesto" placeholder="Nombre del Repuesto" required />
+            <input type="number" id="stockRepuesto" placeholder="Cantidad en Stock" min="0" value="1" required />
+            <input type="number" id="precioRepuesto" placeholder="Precio" min="0" step="0.01" value="0.00" required />
+            <button type="submit">Agregar</button>
+        </form>
+
+        <h3>Inventario Actual</h3>
+
+        <!-- Campo de búsqueda nuevo -->
+        <input type="text" id="buscarInput" placeholder="Buscar repuesto..." oninput="filtrarRepuestos()" />
+
+        <!-- Contenedor de la tabla -->
+        <div id="inventoryScrollContainer">
+            <table id="partsTable">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Stock</th>
+                        <th>Precio</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="partsTableBody"></tbody>
+            </table>
+        </div>
+
+        <p id="noPartsMessage" style="display: none;">No hay repuestos en el inventario.</p>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = 'lola2025';
+        let repuestos = JSON.parse(localStorage.getItem('repuestos')) || [];
+
+        const loginContainer = document.getElementById('loginContainer');
+        const inventoryContainer = document.getElementById('inventoryContainer');
+        const passwordInput = document.getElementById('password');
+        const partsTableBody = document.getElementById('partsTableBody');
+        const noPartsMessage = document.getElementById('noPartsMessage');
+
+        function login() {
+            const pass = passwordInput.value;
+            if (pass === ADMIN_PASSWORD) {
+                loginContainer.style.display = 'none';
+                inventoryContainer.style.display = 'block';
+                passwordInput.value = '';
+                mostrarRepuestos();
+            } else {
+                alert('Contraseña incorrecta.');
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        function logout() {
+            inventoryContainer.style.display = 'none';
+            loginContainer.style.display = 'block';
+            passwordInput.focus();
+        }
+
+        function mostrarRepuestos() {
+            document.getElementById('buscarInput').value = ''; // Limpiar búsqueda
+            partsTableBody.innerHTML = '';
+
+            if (repuestos.length === 0) {
+                noPartsMessage.style.display = 'block';
+                partsTableBody.style.display = 'none';
+            } else {
+                noPartsMessage.style.display = 'none';
+                partsTableBody.style.display = 'table-row-group';
+
+                repuestos.forEach((repuesto, index) => {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `
+                        <td>${repuesto.nombre}</td>
+                        <td>${repuesto.stock}</td>
+                        <td>$${repuesto.precio.toFixed(2)}</td>
+                        <td>
+                            <button class="sell-button" onclick="venderRepuesto(${index})" ${repuesto.stock <= 0 ? 'disabled' : ''}>Vender</button>
+                            <button class="modify-button" onclick="modificarRepuesto(${index})">Modificar</button>
+                            <button class="delete-button" onclick="eliminarRepuesto(${index})">Eliminar</button>
+                        </td>
+                    `;
+                    partsTableBody.appendChild(fila);
+                });
+            }
+        }
+
+        function guardarRepuestos() {
+            localStorage.setItem('repuestos', JSON.stringify(repuestos));
+        }
+
+        function addPart(e) {
+            e.preventDefault();
+
+            const nombre = document.getElementById('nombreRepuesto').value.trim();
+            const stock = parseInt(document.getElementById('stockRepuesto').value);
+            const precio = parseFloat(document.getElementById('precioRepuesto').value);
+
+            if (!nombre) {
+                alert('El nombre del repuesto no puede estar vacío.');
+                return;
+            }
+
+            repuestos.push({ nombre, stock, precio });
+            guardarRepuestos();
+            mostrarRepuestos();
+            e.target.reset();
+        }
+
+        function venderRepuesto(index) {
+            if (repuestos[index].stock > 0) {
+                repuestos[index].stock--;
+                guardarRepuestos();
+                mostrarRepuestos();
+            }
+        }
+
+        function eliminarRepuesto(index) {
+            if (confirm('¿Estás seguro de eliminar este repuesto?')) {
+                repuestos.splice(index, 1);
+                guardarRepuestos();
+                mostrarRepuestos();
+            }
+        }
+
+        function modificarRepuesto(index) {
+            const nuevoNombre = prompt('Nuevo nombre:', repuestos[index].nombre);
+            if (nuevoNombre === null) return;
+            const nuevoStock = prompt('Nuevo stock:', repuestos[index].stock);
+            if (nuevoStock === null) return;
+            const nuevoPrecio = prompt('Nuevo precio:', repuestos[index].precio);
+            if (nuevoPrecio === null) return;
+
+            if (nuevoNombre.trim() && !isNaN(nuevoStock) && !isNaN(nuevoPrecio)) {
+                repuestos[index].nombre = nuevoNombre.trim();
+                repuestos[index].stock = parseInt(nuevoStock);
+                repuestos[index].precio = parseFloat(nuevoPrecio);
+                guardarRepuestos();
+                mostrarRepuestos();
+            } else {
+                alert('Datos inválidos. Modificación cancelada.');
+            }
+        }
+
+        function filtrarRepuestos() {
+            const textoBusqueda = document.getElementById('buscarInput').value.toLowerCase();
+            partsTableBody.innerHTML = '';
+
+            const repuestosFiltrados = repuestos.filter(repuesto =>
+                repuesto.nombre.toLowerCase().includes(textoBusqueda)
+            );
+
+            if (repuestosFiltrados.length === 0) {
+                noPartsMessage.style.display = 'block';
+                partsTableBody.style.display = 'none';
+            } else {
+                noPartsMessage.style.display = 'none';
+                partsTableBody.style.display = 'table-row-group';
+
+                repuestosFiltrados.forEach((repuesto, indexOriginal) => {
+                    const index = repuestos.indexOf(repuesto);
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `
+                        <td>${repuesto.nombre}</td>
+                        <td>${repuesto.stock}</td>
+                        <td>$${repuesto.precio.toFixed(2)}</td>
+                        <td>
+                            <button class="sell-button" onclick="venderRepuesto(${index})" ${repuesto.stock <= 0 ? 'disabled' : ''}>Vender</button>
+                            <button class="modify-button" onclick="modificarRepuesto(${index})">Modificar</button>
+                            <button class="delete-button" onclick="eliminarRepuesto(${index})">Eliminar</button>
+                        </td>
+                    `;
+                    partsTableBody.appendChild(fila);
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>
